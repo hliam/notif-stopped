@@ -30,14 +30,14 @@ fn run() -> Result<(), String> {
     // The process has stopped at this point.
     if let Some(url) = maybe_url {
         println!(
-            "process stopped, sending notification: {}",
+            "Process stopped, sending notification: {}",
             cli.process_name
         );
         minreq::post(url)
             .send()
             .map_err(|e| format!("http request failed: {e}"))?;
     } else {
-        println!("process stopped: {}", cli.process_name);
+        println!("Process stopped: {}", cli.process_name);
     }
 
     Ok(())
@@ -46,7 +46,7 @@ fn run() -> Result<(), String> {
 /// Send a notification to your phone when a program stops running.
 ///
 /// The url for the webhook can be set with the `NOTIF_URL` environment variable (and can be set in
-/// a .env file).
+/// a .env file that's either in the same directory as the exe or in the current working directory).
 ///
 /// The program must be currently running. This requires an app (on your phone) that will send a
 /// notification when a webhook is POSTed to (such as Pushcut). This can also be used for other,
@@ -83,7 +83,27 @@ impl Cli {
 /// This does basic validation that the url is actually a url. Errors reflect io errors, .env
 /// parsing errors, and invalid pushcut paths.
 fn get_webhook_url() -> Result<String, String> {
-    match dotenvy::var("NOTIF_URL").map_err(|e| e.to_string())? {
+    let cur_exe = std::env::current_exe().map_err(|e| format!("failed to get current exe: {e}"))?;
+    let exe_dir = cur_exe
+        .parent()
+        .ok_or_else(|| "failed to get current exe's parent directory".to_owned())?;
+
+    match dotenvy::from_path(exe_dir.join(".env")) {
+        Ok(_) => (),
+        Err(dotenvy::Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => (),
+        Err(e) => return Err(format!("failed read .env file in exe directory: {e}")),
+    }
+    match dotenvy::dotenv() {
+        Ok(_) => (),
+        Err(dotenvy::Error::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => (),
+        Err(e) => {
+            return Err(format!(
+                "failed read .env file in current working directory: {e}"
+            ))
+        }
+    }
+
+    match std::env::var("NOTIF_URL").map_err(|e| e.to_string())? {
         p if p.is_empty() => {
             Err("'NOTIF_URL' environment variable needs to be set (to the webhook url)".to_owned())
         }
