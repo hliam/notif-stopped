@@ -3,13 +3,11 @@ use std::time::Duration;
 
 use clap::Parser;
 
-// TODO: add color to errors (to match clap) and `--no-color` option.
-
 fn main() -> ExitCode {
     match run() {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("error: {e}");
+            eprintln!("\x1b[91merror\x1b[0m: {e}");
             ExitCode::FAILURE
         }
     }
