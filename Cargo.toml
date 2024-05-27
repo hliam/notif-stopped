@@ -1,0 +1,14 @@
+[package]
+name = "notif_stopped"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+dotenvy = "0.15"
+minreq = { version = "2.11", features = ["native-tls"] }
+sysinfo = "0.30"
