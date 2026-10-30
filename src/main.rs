@@ -115,17 +115,21 @@ fn get_webhook_url() -> Result<String, String> {
 ///
 /// Whether or not the process is running with be regularly every `check_interval` duration.
 fn block_while_process_running(process_name: &str, check_interval: Duration) -> bool {
-    let mut s = sysinfo::System::new_with_specifics(
-        sysinfo::RefreshKind::new().with_processes(sysinfo::ProcessRefreshKind::everything()),
-    );
-    let pid = match s.processes_by_exact_name(process_name).next() {
+    let task_refresh_kind = sysinfo::RefreshKind::nothing()
+        .with_processes(sysinfo::ProcessRefreshKind::nothing().with_tasks());
+
+    let mut system = sysinfo::System::new().expect("failed to get sys info");
+    system.refresh_specifics(task_refresh_kind);
+    let maybe_process = system.processes_by_exact_name(process_name.as_ref()).next();
+    let pid = match maybe_process {
         Some(process) => process.pid(),
         None => return false,
     };
 
-    while s.process(pid).is_some() {
+    std::thread::sleep(check_interval);
+    while system.process(pid).is_some() {
         std::thread::sleep(check_interval);
-        s.refresh_pids(&[pid]);
+        system.refresh_specifics(task_refresh_kind);
     }
 
     true

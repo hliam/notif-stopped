@@ -10,5 +10,5 @@ codegen-units = 1
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 dotenvy = "0.15"
-minreq = { version = "2.11", features = ["native-tls"] }
-sysinfo = "0.30"
+minreq = { version = "3.0", features = ["native-tls"] }
+sysinfo = "0.40"
